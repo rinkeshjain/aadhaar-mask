@@ -1,3 +1,6 @@
+![[object Object]](https://resize.indiatv.in/resize/newbucket/905_509/2022/05/masked-aadhaar-1653820165.jpg)
+
+
 # Aadhaar Masking Utility
 
 `aadhaar-mask` is a react project that can itendify and mask Aadhaar number avaible in selected image file.
