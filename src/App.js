@@ -37,13 +37,14 @@ class App extends React.Component {
     let { file } = this.state
 
     if (e != null) {
-      this.angle=0;
+      this.angle = 0;
       console.log(e.target.files[0]);
       file = e.target.files[0];
       this.setState({
         file: e.target.files[0]
       });
     }
+
 
     Resizer.imageFileResizer(
       file,
@@ -54,7 +55,7 @@ class App extends React.Component {
       this.angle,
       (uri) => {
         // console.log(uri)
-        this.maskImageOnCanvas([], uri);
+        // this.maskImageOnCanvas([], uri);
         this.checkImageStatus(uri);
       },
       "base64"
@@ -124,8 +125,7 @@ class App extends React.Component {
   }
 
   getCorrectAngle = data => {
-    var vertexList = data[0].textAnnotations[1].boundingPoly.vertices;
-
+    var vertexList = data.boundingBox.vertices;
     const ORIENTATION_NORMAL = 0;
     const ORIENTATION_270_DEGREE = 270;
     const ORIENTATION_90_DEGREE = 90;
@@ -159,25 +159,28 @@ class App extends React.Component {
   }
 
   getMaskCordinate = blockInfo => {
-    var maskBlock = {
-      "x": 0,
-      "y": 0,
-      "width": 0,
-      "height": 0
+    var maskArray = []
+    let MaskBlock = class {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+      }
     };
+    
 
     var word = blockInfo.word;
     if (word.length >= 1) {
-      maskBlock.x = word[0].boundingBox.vertices[0].x;
-      maskBlock.width = word[1].boundingBox.vertices[2].x;
-      maskBlock.y = word[0].boundingBox.vertices[0].y
-      maskBlock.height = word[1].boundingBox.vertices[2].y;
+      maskArray.push(new MaskBlock(word[0].boundingBox.vertices[0].x, word[0].boundingBox.vertices[0].y))
+      maskArray.push(new MaskBlock(word[1].boundingBox.vertices[1].x, word[1].boundingBox.vertices[1].y))
+      maskArray.push(new MaskBlock(word[1].boundingBox.vertices[2].x, word[1].boundingBox.vertices[2].y))
+      maskArray.push(new MaskBlock(word[0].boundingBox.vertices[3].x, word[0].boundingBox.vertices[3].y))
+    
     }
-    return maskBlock;
+    return maskArray;
   }
 
   checkImageStatus = imageBase => {
-    // console.log(imageBase)
+    console.log(imageBase)
     vision.init({ auth: 'API_KEY' });
     const req = new vision.Request({
       image: new vision.Image({ base64: imageBase }),
@@ -195,14 +198,16 @@ class App extends React.Component {
       var result = fullText.match(/([0-9]{3,4}). ([0-9]{3,4}). ([0-9]{3,4})/g);
       console.log(result);
       if ((result == null || result == "")) {
-        if (this.angle < 360) {
-          this.angle = this.angle + 90;
-          this.handleFileInputChange(null)
-          return;
-        } else {
-          console.log("Invalid Image");
-          return;
-        }
+        // remove Rotation Logic
+        // if (this.angle < 360) {
+        //   this.angle = this.angle + 90;
+        //   this.handleFileInputChange(null)
+        //   return;
+        // } else {
+        console.log("Invalid Image");
+        alert("Invalid Aadhar Image Selected")
+        return;
+        // }
       } else {
         result = result[0];
       }
@@ -210,20 +215,23 @@ class App extends React.Component {
 
       console.log("Valid Aadhaar Number" + result);
       var maskCordinate = [];
+      var blockForCheckAngle = [];
       response[0].fullTextAnnotation.pages.forEach(page => {
         page.blocks.forEach(block => {
           var blockInfo = this.blockText(block, result);
           if (blockInfo.text.includes(result)) {
             var maskInfo = this.getMaskCordinate(blockInfo)
             maskCordinate.push(maskInfo);
+            blockForCheckAngle = block;
           }
 
         })
       });
       this.maskImageOnCanvas(maskCordinate, imageBase);
-      var angle = this.getCorrectAngle(response)
+      console.log(maskCordinate)
+      var angle = this.getCorrectAngle(blockForCheckAngle)
       if (angle != 0) {
-        this.angle=360 - angle  
+        this.angle = 360 - angle
         this.handleFileInputChange(null);
       }
 
@@ -287,8 +295,13 @@ class App extends React.Component {
       ctx.drawImage(image, 0, 0);
       ctx.beginPath();
       maskCordinate.forEach(data => {
-        ctx.rect(data.x, data.y, data.width - data.x, data.height - data.y);
+        ctx.moveTo(data[0].x, data[0].y)
+        data.forEach(block => {
+          ctx.lineTo(block.x, block.y)
+        })
         ctx.fill();
+        // ctx.rect(data.x, data.y, data.width - data.x, data.height - data.y);
+
       })
 
     };
