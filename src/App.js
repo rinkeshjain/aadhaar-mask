@@ -13,6 +13,7 @@ class App extends React.Component {
     base64URL: ""
   };
 
+
   getBase64 = file => {
     return new Promise(resolve => {
       let fileInfo;
@@ -44,23 +45,29 @@ class App extends React.Component {
         file: e.target.files[0]
       });
     }
+    if (file.type=="application/pdf") {
+      window.pdfToPng(e,  (base64Data) =>{
+     this.maskImageOnCanvas([], base64Data);
+     this.checkImageStatus(base64Data);
+      });
+      
+    } else {
 
-
-    Resizer.imageFileResizer(
-      file,
-      1000,
-      1000,
-      "JPEG",
-      100,
-      this.angle,
-      (uri) => {
-        // console.log(uri)
-        // this.maskImageOnCanvas([], uri);
-        this.checkImageStatus(uri);
-      },
-      "base64"
-    );
-
+      Resizer.imageFileResizer(
+        file,
+        1000,
+        1000,
+        "JPEG",
+        100,
+        this.angle,
+        (uri) => {
+          // console.log(uri)
+          this.maskImageOnCanvas([], uri);
+          this.checkImageStatus(uri);
+        },
+        "base64"
+      );
+    }
 
     // For get Base 64 of selected File 
     // this.getBase64(file)
@@ -166,7 +173,7 @@ class App extends React.Component {
         this.y = y;
       }
     };
-    
+
 
     var word = blockInfo.word;
     if (word.length >= 1) {
@@ -174,14 +181,14 @@ class App extends React.Component {
       maskArray.push(new MaskBlock(word[1].boundingBox.vertices[1].x, word[1].boundingBox.vertices[1].y))
       maskArray.push(new MaskBlock(word[1].boundingBox.vertices[2].x, word[1].boundingBox.vertices[2].y))
       maskArray.push(new MaskBlock(word[0].boundingBox.vertices[3].x, word[0].boundingBox.vertices[3].y))
-    
+
     }
     return maskArray;
   }
 
   checkImageStatus = imageBase => {
     console.log(imageBase)
-    vision.init({ auth: 'API_KEY' });
+    vision.init({ auth: '________API_KEY_______' });
     const req = new vision.Request({
       image: new vision.Image({ base64: imageBase }),
       features: [
@@ -198,12 +205,6 @@ class App extends React.Component {
       var result = fullText.match(/([0-9]{3,4}). ([0-9]{3,4}). ([0-9]{3,4})/g);
       console.log(result);
       if ((result == null || result == "")) {
-        // remove Rotation Logic
-        // if (this.angle < 360) {
-        //   this.angle = this.angle + 90;
-        //   this.handleFileInputChange(null)
-        //   return;
-        // } else {
         console.log("Invalid Image");
         alert("Invalid Aadhar Image Selected")
         return;
