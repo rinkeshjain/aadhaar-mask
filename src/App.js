@@ -34,9 +34,24 @@ class App extends React.Component {
     });
   };
 
-  handleFileInputChange = e => {
-    let { file } = this.state
+  downloadMaskFile=e=>{
+    console.log("MASK FILE");
+    var link = document.createElement('a');
+    var image = document.getElementById("maskCanvas").toDataURL();
+    link.download = "mask_"+localStorage.getItem('fileName', "mask_image.png").split(".")[0]+".png";
+    link.href=image;
+    link.click();
+  }
 
+  handleFileInputChange = e => {
+
+    var c = document.getElementById("maskCanvas");
+    c.width = 1000;
+    c.height = 1000;
+
+
+    let { file } = this.state
+    localStorage.setItem('fileName', e.target.files[0].name);
     if (e != null) {
       this.angle = 0;
       console.log(e.target.files[0]);
@@ -45,12 +60,12 @@ class App extends React.Component {
         file: e.target.files[0]
       });
     }
-    if (file.type=="application/pdf") {
-      window.pdfToPng(e,  (base64Data) =>{
-     this.maskImageOnCanvas([], base64Data);
-     this.checkImageStatus(base64Data);
+    if (file.type == "application/pdf") {
+      window.pdfToPng(e, (base64Data) => {
+        this.maskImageOnCanvas([], base64Data);
+        this.checkImageStatus(base64Data);
       });
-      
+
     } else {
 
       Resizer.imageFileResizer(
@@ -188,7 +203,7 @@ class App extends React.Component {
 
   checkImageStatus = imageBase => {
     console.log(imageBase)
-    vision.init({ auth: '________API_KEY_______' });
+    vision.init({ auth: '__KEY___' });
     const req = new vision.Request({
       image: new vision.Image({ base64: imageBase }),
       features: [
@@ -314,7 +329,15 @@ class App extends React.Component {
   render() {
     return (
       <div>
-        <input type="file" name="file" onChange={this.handleFileInputChange} />
+        <div class="upload-btn-wrapper">
+          <button class="btn">Upload a file</button>
+          <input type="file" name="file" onChange={this.handleFileInputChange} />
+        </div>
+
+        <div class="download-btn-wrapper">
+          <button class="btn" id="download" onClick={this.downloadMaskFile} >Download Mask File</button>
+        </div>
+
         <canvas id="maskCanvas" width="1000" height="1000" />
       </div>
     );
