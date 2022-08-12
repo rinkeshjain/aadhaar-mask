@@ -15,6 +15,8 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+
+  <link rel="stylesheet" href="App.css">
   <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
@@ -37,6 +39,7 @@
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.5.207/pdf.worker.js';
 
     window.pdfToPng = function pdfConvertor(event, callBack) {
+  
       var file = event.target.files[0];
       var fileReader = new FileReader();
       fileReader.onload = function () {
@@ -46,36 +49,73 @@
         loadingTask.promise.then(pdf => {
           // The document is loaded here...
           //This below is just for demonstration purposes showing that it works with the moderen api
-          pdf.getPage(1).then(function (page) {
-            console.log('Page loaded');
-            var scale = 1.5;
-            var viewport = page.getViewport({
-              scale: scale
-            });
-            var canvas = document.getElementById('maskCanvas');
-            var context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+          // const viewer = document.getElementById("viewer");
+          var pageCount = pdf.numPages;
+          var count = 0;
+          for (var i = 0; i < pageCount; i++) {
+            pdf.getPage(i + 1).then(function (page) {
+              var scale = 1.5;
+              var viewport = page.getViewport({
+                scale: scale
+              });
+              const canvas = document.createElement("canvas");
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              const context = canvas.getContext("2d");
 
-            // Render PDF page into canvas context
-            var renderContext = {
-              canvasContext: context,
-              viewport: viewport
-            };
-            var renderTask = page.render(renderContext);
-            renderTask.promise.then(function () {
-              console.log('Page rendered');
-              const base64Canvas = canvas.toDataURL("image/jpeg");
-              callBack(base64Canvas);
+              var c = document.getElementById("maskCanvas");
+              c.width = viewport.width;
+              c.height = viewport.height * pageCount;
+
+              // viewer.appendChild(canvas);
+              // Render PDF page into canvas context
+              var renderTask = page.render({
+                canvasContext: context,
+                viewport: viewport
+              });
+              renderTask.promise.then(function () {
+                console.log('Page rendered');
+                const base64Canvas = canvas.toDataURL("image/jpeg");
+                console.log("Item Pushed");
+                count++;
+                drawPage(count, viewport.width, viewport.height, base64Canvas, function counterCheck(updateCount) {
+                  if (updateCount == pageCount) {
+                    var c = document.getElementById("maskCanvas");
+                    callBack(c.toDataURL("image/jpeg"));
+                  }
+                });
+
+
+              });
+
             });
-          });
+
+          }
+          console.log("Task Complete");
+
+        }
+        ).then(() => {
+          console.log("Task Chain Start");
         });
       }
       fileReader.readAsArrayBuffer(file);
     }
+    function drawPage(counter, width, height, base64Canvas, onCompleteCallback) {
+      var c = document.getElementById("maskCanvas");
+      var ctx = c.getContext("2d");
+      var img = new Image;
+      img.onload = function () {
+        var updateHeight = height * (counter - 1);
+        ctx.drawImage(this, 0, updateHeight);
+        onCompleteCallback(counter++);
+      }
+      img.src = base64Canvas;  // start loading the data-uri as source
+    }
+
   </script>
 
   <div id="root"></div>
+  <div id="viewer" style="visibility: hidden;"></div>
   <!--
       This HTML file is a template.
       If you open it directly in the browser, you will see an empty page.
