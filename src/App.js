@@ -60,7 +60,7 @@ class App extends React.Component {
         file: e.target.files[0]
       });
     }
-    if (file.type == "application/pdf") {
+    if (file.type === "application/pdf") {
       window.pdfToPng(e, (base64Data) => {
         this.maskImageOnCanvas([], base64Data);
         this.checkImageStatus(base64Data);
@@ -182,23 +182,33 @@ class App extends React.Component {
 
   getMaskCordinate = blockInfo => {
     var maskArray = []
+   
+    var word = blockInfo.word;
+    if (word.length >= 1) {
+      maskArray.push(this.getMaskBlock(word[0].boundingBox.vertices[0].x, word[0].boundingBox.vertices[0].y))
+      maskArray.push(this.getMaskBlock(word[1].boundingBox.vertices[1].x, word[1].boundingBox.vertices[1].y))
+      maskArray.push(this.getMaskBlock(word[1].boundingBox.vertices[2].x, word[1].boundingBox.vertices[2].y))
+      maskArray.push(this.getMaskBlock(word[0].boundingBox.vertices[3].x, word[0].boundingBox.vertices[3].y))
+
+    }
+    return maskArray;
+  }
+  getMaskBlock(x,y){
     let MaskBlock = class {
       constructor(x, y) {
         this.x = x;
         this.y = y;
       }
     };
-
-
-    var word = blockInfo.word;
-    if (word.length >= 1) {
-      maskArray.push(new MaskBlock(word[0].boundingBox.vertices[0].x, word[0].boundingBox.vertices[0].y))
-      maskArray.push(new MaskBlock(word[1].boundingBox.vertices[1].x, word[1].boundingBox.vertices[1].y))
-      maskArray.push(new MaskBlock(word[1].boundingBox.vertices[2].x, word[1].boundingBox.vertices[2].y))
-      maskArray.push(new MaskBlock(word[0].boundingBox.vertices[3].x, word[0].boundingBox.vertices[3].y))
-
+    var maskX=0;
+    var maskY=0;
+    if(x!==undefined&&x!==null){
+      maskX=x;
     }
-    return maskArray;
+    if(y!==undefined&&y!==null){
+      maskY=y;
+    }
+    return new MaskBlock(maskX,maskY);
   }
 
   checkImageStatus = imageBase => {
@@ -219,7 +229,7 @@ class App extends React.Component {
       console.log(fullText)
       var result = fullText.match(/([0-9]{3,4}). ([0-9]{3,4}). ([0-9]{3,4})/g);
       console.log(result);
-      if ((result == null || result == "")) {
+      if ((result === null || result === "")) {
         console.log("Invalid Image");
         alert("Invalid Aadhar Image Selected")
         return;
@@ -235,6 +245,7 @@ class App extends React.Component {
       response[0].fullTextAnnotation.pages.forEach(page => {
         page.blocks.forEach(block => {
           var blockInfo = this.blockText(block, result);
+          console.log(blockInfo);
           if (blockInfo.text.includes(result)) {
             var maskInfo = this.getMaskCordinate(blockInfo)
             maskCordinate.push(maskInfo);
@@ -246,7 +257,7 @@ class App extends React.Component {
       this.maskImageOnCanvas(maskCordinate, imageBase);
       console.log(maskCordinate)
       var angle = this.getCorrectAngle(blockForCheckAngle)
-      if (angle != 0) {
+      if (angle !== 0) {
         this.angle = 360 - angle
         this.handleFileInputChange(null);
       }
